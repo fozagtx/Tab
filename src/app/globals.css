@@ -1,0 +1,1357 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1f2348;
+  --paper: #fbfaf7;
+  --paper-edge: #efeae0;
+  --gold: #e9b213;
+  --gold-hot: #fc8702;
+  --paid: #21bca5;
+  --alert: #d94432;
+  --muted: #6b708c;
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --radius-cta: 14px;
+
+  /* Fluid type — scales across 320→430 mini-app widths */
+  --type-meta: clamp(10px, 2.8vw, 11px);
+  --type-body: clamp(15px, 4.2vw, 16px);
+  --type-title: clamp(24px, 7vw, 28px);
+  --type-display: clamp(28px, 8.5vw, 34px);
+  --type-money: clamp(40px, 13vw, 52px);
+  --leading-body: 1.5;
+  --leading-display: 1.1;
+  --track-meta: 0.2em;
+  --track-label: 0.1em;
+  --track-display: -0.035em;
+  --track-money: -0.045em;
+
+  /* Fluid spacing + safe areas */
+  --pad-x: clamp(16px, 5.5vw, 24px);
+  --pad-y: clamp(12px, 3.5vw, 16px);
+  --space-1: 8px;
+  --space-2: clamp(12px, 4vw, 16px);
+  --space-3: clamp(18px, 5.5vw, 24px);
+  --space-4: clamp(28px, 8vw, 40px);
+  --space-group: 10px;
+  --space-section: clamp(16px, 4.5vw, 24px);
+  /* Keep heroes short so CTA stays on-screen in Nimiq Pay chrome */
+  --hero-h: clamp(72px, 16svh, 112px);
+  --hero-h-compact: clamp(48px, 10svh, 72px);
+  --cta-h: clamp(52px, 14vw, 56px);
+  /* Extra bottom inset — WebViews often under-report safe-area as 0 */
+  --safe-bottom-raw: env(safe-area-inset-bottom, 0px);
+  --safe-bottom-floor: 28px;
+  --safe-bottom: max(var(--safe-bottom-raw), var(--safe-bottom-floor));
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --cta-dock: calc(var(--cta-h) + 28px + var(--safe-bottom));
+
+  /* Emil craft — strong curves, short press */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --press-ms: 140ms;
+}
+
+/* Force light thermal-receipt theme (Nimiq Pay WebViews often report dark). */
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-paper-edge: var(--paper-edge);
+  --color-gold: var(--gold);
+  --color-gold-hot: var(--gold-hot);
+  --color-paid: var(--paid);
+  --color-alert: var(--alert);
+  --color-muted: var(--muted);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-mulish);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+  height: 100%;
+  height: 100svh;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mulish), "Mulish", "Muli", system-ui, sans-serif;
+  font-size: var(--type-body);
+  font-weight: 500;
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+.receipt-shell {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  /* Visible viewport only — never taller than the phone screen */
+  height: 100%;
+  height: 100svh;
+  max-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(var(--pad-y) + var(--safe-top));
+  padding-right: calc(var(--pad-x) + var(--safe-right));
+  padding-bottom: 0;
+  padding-left: calc(var(--pad-x) + var(--safe-left));
+  position: relative;
+  isolation: isolate;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+/* Scrollable form body — CTA lives outside this */
+.receipt-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: 8px;
+}
+
+.receipt-scroll.flex {
+  display: flex;
+}
+
+/* In-UI hero — fluid height, bleed to shell edges */
+.ui-hero {
+  position: relative;
+  width: calc(100% + var(--pad-x) + var(--pad-x) + var(--safe-left) + var(--safe-right));
+  margin-top: calc(-1 * (var(--pad-y) + var(--safe-top)));
+  margin-right: calc(-1 * (var(--pad-x) + var(--safe-right)));
+  margin-bottom: var(--space-2);
+  margin-left: calc(-1 * (var(--pad-x) + var(--safe-left)));
+  height: var(--hero-h);
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--paper-edge);
+}
+
+.ui-hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ui-hero__fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 40%,
+    color-mix(in srgb, var(--paper) 55%, transparent) 72%,
+    var(--paper) 100%
+  );
+}
+
+.ui-hero--paper {
+  height: var(--hero-h-compact);
+}
+
+.ui-hero--paper .ui-hero__img {
+  object-position: center;
+}
+
+.receipt-shell--stage {
+  background: var(--paper);
+}
+
+.stack-section + .stack-section {
+  margin-top: var(--space-section);
+}
+
+.stack-group > * + * {
+  margin-top: var(--space-group);
+}
+
+.eyebrow {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: var(--type-meta);
+  font-weight: 700;
+  letter-spacing: var(--track-meta);
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.display {
+  font-family: var(--font-mulish), "Mulish", "Muli", system-ui, sans-serif;
+  font-size: var(--type-display);
+  font-weight: 800;
+  letter-spacing: var(--track-display);
+  line-height: var(--leading-display);
+  color: var(--ink);
+  max-width: 18ch;
+}
+
+.title {
+  font-family: var(--font-mulish), "Mulish", "Muli", system-ui, sans-serif;
+  font-size: var(--type-title);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ink);
+  max-width: 22ch;
+}
+
+.body {
+  font-size: var(--type-body);
+  font-weight: 500;
+  line-height: var(--leading-body);
+  color: var(--muted);
+  max-width: 36ch;
+}
+
+.label {
+  font-family: var(--font-mulish), "Mulish", "Muli", system-ui, sans-serif;
+  font-size: var(--type-meta);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.mono {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-xl {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: var(--type-money);
+  font-weight: 700;
+  letter-spacing: var(--track-money);
+  line-height: 1;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.money-md {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: clamp(18px, 5vw, 20px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.rule {
+  border: 0;
+  border-bottom: 2px solid var(--paper-edge);
+}
+
+.rule-soft {
+  border: 0;
+  border-bottom: 1.5px solid var(--paper-edge);
+}
+
+.perf {
+  border-top: 1px dashed var(--paper-edge);
+}
+
+.stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1.5px solid var(--paper-edge);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--press-ms) var(--ease-out),
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .stepper-btn:hover {
+    border-color: color-mix(in srgb, var(--ink) 28%, var(--paper-edge));
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+  }
+}
+
+.stepper-btn:active {
+  transform: scale(0.96);
+}
+
+.cta {
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-cta);
+  min-height: var(--cta-h);
+  padding: 0 clamp(14px, 4vw, 20px);
+  font-family: var(--font-mulish), "Mulish", "Muli", system-ui, sans-serif;
+  font-size: clamp(16px, 4.5vw, 17px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #1f2348;
+  background: linear-gradient(135deg, #e9b213, #fc8702);
+  cursor: pointer;
+  width: 100%;
+  max-width: 100%;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px color-mix(in srgb, #fc8702 22%, transparent);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--press-ms) var(--ease-out),
+    box-shadow 180ms var(--ease-out),
+    filter 180ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cta:hover:not(:disabled) {
+    filter: brightness(1.03);
+    box-shadow: 0 10px 24px color-mix(in srgb, #fc8702 28%, transparent);
+  }
+}
+
+.cta:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: none;
+}
+
+.cta:active:not(:disabled) {
+  transform: scale(0.97);
+  box-shadow: 0 4px 12px color-mix(in srgb, #fc8702 18%, transparent);
+}
+
+.cta-secondary {
+  appearance: none;
+  border: 1.5px solid var(--paper-edge);
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+  color: var(--ink);
+  border-radius: var(--radius-cta);
+  min-height: calc(var(--cta-h) - 4px);
+  padding: 0 clamp(12px, 4vw, 16px);
+  font-family: var(--font-mulish), "Mulish", "Muli", system-ui, sans-serif;
+  font-size: clamp(14px, 4vw, 15px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  width: 100%;
+  max-width: 100%;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--press-ms) var(--ease-out),
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out);
+}
+
+.cta-secondary:active {
+  transform: scale(0.97);
+}
+
+.field {
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+  border-bottom: 2px solid var(--paper-edge);
+  background: transparent;
+  color: var(--ink);
+  outline: none;
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: var(--type-money);
+  font-weight: 700;
+  letter-spacing: var(--track-money);
+  line-height: 1;
+  padding: 6px 0 10px;
+  /* iOS: keep >=16px effective to avoid input zoom */
+  min-height: 1.1em;
+  transition: border-bottom-color 160ms var(--ease-out);
+}
+
+.field:focus {
+  border-bottom-color: var(--ink);
+}
+
+.field::placeholder {
+  color: color-mix(in srgb, var(--ink) 20%, transparent);
+  font-weight: 400;
+}
+
+.input-line {
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+  border-bottom: 1.5px solid var(--paper-edge);
+  background: transparent;
+  color: var(--ink);
+  outline: none;
+  font-size: max(16px, var(--type-body));
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 10px 0;
+  transition: border-bottom-color 160ms var(--ease-out);
+}
+
+.input-line:focus {
+  border-bottom-color: var(--ink);
+}
+
+/* USD → NIM conversion strip under totals */
+.fx-convert {
+  display: block;
+  min-height: 28px;
+  padding: 6px 0 0;
+}
+
+.fx-convert--lg {
+  min-height: 32px;
+  padding-top: 8px;
+}
+
+.fx-convert__stage {
+  position: relative;
+  min-height: 22px;
+}
+
+.fx-convert__pane {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  position: absolute;
+  inset: 0 auto auto 0;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+.fx-convert__pane[data-active='true'] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  position: relative;
+  inset: auto;
+}
+
+.fx-convert--lg .fx-convert__pane {
+  gap: 10px;
+}
+
+.fx-convert__amount {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+  will-change: transform, opacity, filter;
+}
+
+.fx-convert--lg .fx-convert__amount {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fx-convert__hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.fx-convert__mark {
+  flex-shrink: 0;
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+
+.fx-convert__pane[data-active='true'] .fx-convert__mark {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.fx-convert__pane:not([data-active='true']) .fx-convert__mark {
+  transform: scale(0.92);
+  opacity: 0;
+}
+
+.share-nim {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 7.5rem;
+  flex-shrink: 0;
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.share-nim--live > span:last-child {
+  display: inline-block;
+  min-width: 4.5ch;
+  will-change: transform, opacity, filter;
+}
+
+.fade-mount {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
+}
+
+.fade-mount[data-visible='true'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-mount[data-reduced='true'] {
+  transition: none;
+  transform: none;
+}
+
+.chip-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--paper-edge);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  padding: 5px 10px;
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--press-ms) var(--ease-out),
+    border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+
+.chip-btn:active {
+  transform: scale(0.96);
+}
+
+.chip-btn--ghost {
+  border-color: transparent;
+  color: var(--muted);
+  padding-inline: 4px;
+}
+
+.wallet-chip {
+  display: inline-flex;
+  max-width: 110px;
+  align-items: center;
+  border: 1.5px solid color-mix(in srgb, var(--paid) 40%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paid) 10%, transparent);
+  padding: 4px 8px;
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--paid);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.input-line.mono {
+  font-size: max(16px, 13px);
+  letter-spacing: -0.01em;
+  word-break: break-all;
+}
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--paid);
+  color: var(--paid);
+  font-family: var(--font-mulish), "Mulish", "Muli", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 5px 9px;
+  transform: rotate(-8deg);
+  flex-shrink: 0;
+}
+
+.stamp-marked {
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+.stub-tear {
+  /* static — no tear animation */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta,
+  .cta-secondary,
+  .stepper-btn,
+  .chip-btn,
+  .field,
+  .input-line,
+  .fx-convert__pane,
+  .fx-convert__mark,
+  .fade-mount {
+    transition: none;
+  }
+
+  .cta:active:not(:disabled),
+  .cta-secondary:active,
+  .stepper-btn:active,
+  .chip-btn:active {
+    transform: none;
+  }
+
+  .fx-convert__pane {
+    transform: none;
+  }
+
+  .fx-convert__pane[data-active='true'] {
+    opacity: 1;
+  }
+
+  .fx-convert__pane:not([data-active='true']) {
+    opacity: 0;
+  }
+}
+
+.fixed-cta {
+  /* Real flex footer — sticky fails inside Nimiq Pay WebViews */
+  position: relative;
+  bottom: auto;
+  z-index: 40;
+  margin-top: 0;
+  flex-shrink: 0;
+  padding-top: 12px;
+  /* Home indicator clearance: never trust safe-area alone (often 0 in Chrome/WebViews) */
+  padding-bottom: calc(14px + var(--safe-bottom));
+  background: var(--paper);
+  border-top: 1px solid var(--paper-edge);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  isolation: isolate;
+  width: calc(100% + var(--pad-x) + var(--pad-x) + var(--safe-left) + var(--safe-right));
+  margin-left: calc(-1 * (var(--pad-x) + var(--safe-left)));
+  margin-right: calc(-1 * (var(--pad-x) + var(--safe-right)));
+  padding-left: calc(var(--pad-x) + var(--safe-left));
+  padding-right: calc(var(--pad-x) + var(--safe-right));
+  box-sizing: border-box;
+}
+
+.field--compact {
+  font-size: clamp(32px, 10vw, 44px);
+  padding: 4px 0 8px;
+}
+
+/* Amount + currency on one baseline — USD sits beside the money */
+.money-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  border-bottom: 2px solid var(--paper-edge);
+  transition: border-bottom-color 160ms var(--ease-out);
+}
+
+.money-entry:focus-within {
+  border-bottom-color: var(--ink);
+}
+
+.money-entry .field {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-bottom: 0;
+  padding-bottom: 8px;
+}
+
+.money-entry .field:focus {
+  border-bottom-color: transparent;
+}
+
+.money-side {
+  flex-shrink: 0;
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 10px;
+  user-select: none;
+}
+
+.money-side--label {
+  padding-bottom: 0;
+  font-size: var(--type-meta);
+  letter-spacing: var(--track-label);
+  align-self: center;
+}
+
+.share-row--tight {
+  padding: 10px 0;
+}
+
+/* Soft invite when Connect is tapped outside Nimiq Pay */
+.pay-invite {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin: 0 0 12px;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transition:
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
+}
+
+.pay-invite[data-shown='true'] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.pay-invite__card {
+  border: 1.5px solid var(--paper-edge);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--gold) 8%, var(--paper));
+  padding: 16px 16px 12px;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.pay-invite__title {
+  margin: 8px 0 0;
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--ink);
+  max-width: 18ch;
+}
+
+.pay-invite__copy {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 34ch;
+}
+
+.pay-invite__stores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pay-invite__store {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  transition: transform var(--press-ms) var(--ease-out);
+  touch-action: manipulation;
+}
+
+.pay-invite__store:active {
+  transform: scale(0.97);
+}
+
+.pay-invite__store-os {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.pay-invite__store-name {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pay-invite__more {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pay-invite__dismiss {
+  margin-top: 8px;
+  margin-left: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pay-invite {
+    transition: none;
+    transform: none;
+  }
+}
+
+.fixed-cta .cta,
+.fixed-cta .cta-secondary,
+.fixed-cta button,
+.fixed-cta a {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.share-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 3vw, 12px);
+  padding: clamp(12px, 4vw, 16px) 0;
+  border-top: 1px dashed var(--paper-edge);
+  min-width: 0;
+}
+
+.share-row > * {
+  min-width: 0;
+}
+
+.share-idx {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: var(--type-meta);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.people-count {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: clamp(24px, 7vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  min-width: 2ch;
+  text-align: center;
+}
+
+/* Overlapping face stack — one emoji per person */
+.people-faces {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  min-height: 36px;
+  padding-left: 2px;
+}
+
+.people-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-left: -10px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-edge);
+  font-size: 18px;
+  line-height: 1;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 6%, transparent);
+  transition:
+    transform 160ms var(--ease-out),
+    opacity 160ms var(--ease-out);
+}
+
+.people-faces .people-face:first-child {
+  margin-left: 0;
+}
+
+.people-faces--sm .people-face {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  margin-left: -8px;
+}
+
+.people-face--more {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, var(--paper));
+}
+
+.people-face {
+  animation: people-pop 180ms var(--ease-out) both;
+}
+
+@keyframes people-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.people-face--row {
+  margin-left: 0;
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+  flex-shrink: 0;
+  animation: none;
+}
+
+/* Party progress card — screenshot bait, thermal not purple-RPG */
+.party-card {
+  border-top: 1px dashed var(--paper-edge);
+  border-bottom: 1px dashed var(--paper-edge);
+  padding: 16px 0 14px;
+}
+
+.party-card--cleared {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gold, #e9b213) 10%, transparent),
+      transparent 48%
+    );
+}
+
+.party-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 22px;
+}
+
+.party-card__stamp {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.party-card__stamp--gold {
+  color: #b07a00;
+}
+
+.party-card__xp {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--paid);
+  animation: party-xp-in 900ms var(--ease-out) both;
+}
+
+.party-card__xp--static {
+  animation: party-xp-in 480ms var(--ease-out) both;
+}
+
+@keyframes party-xp-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+.party-card__eyebrow {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.party-card__score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.party-card__fraction {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.party-card__num {
+  font-size: clamp(36px, 11vw, 48px);
+}
+
+.party-card__slash {
+  font-size: 28px;
+  color: var(--muted);
+  margin: 0 2px;
+}
+
+.party-card__den {
+  font-size: 28px;
+  color: var(--muted);
+}
+
+.party-card__score-meta {
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: lowercase;
+}
+
+.party-bar {
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, var(--paper));
+  overflow: hidden;
+}
+
+.party-bar__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #e9b213, #fc8702);
+  transition: width 420ms var(--ease-out);
+}
+
+.party-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.party-card__row .people-faces {
+  margin-top: 0;
+  min-height: 28px;
+}
+
+.party-card__money {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.party-card__total {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.party-card__cur {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.party-card__share {
+  margin-top: 14px;
+  width: 100%;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+  background: transparent;
+  font-family: var(--font-sans), Mulish, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background 160ms var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+
+.party-card__share:hover {
+  background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+}
+
+.party-card__share:active {
+  transform: scale(0.98);
+}
+
+.party-card__nim {
+  margin-top: 10px;
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.nim-rail {
+  margin: 14px 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.nim-rail strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tab-recents {
+  margin-top: 8px;
+  padding-bottom: 4px;
+}
+
+.tab-recents__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.tab-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px dashed var(--paper-edge);
+}
+
+.tab-stat__num {
+  font-family: var(--font-mono), "Fira Mono", ui-monospace, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.tab-stat__label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.tab-recents__list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.tab-recent-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px dashed var(--paper-edge);
+  text-decoration: none;
+  color: inherit;
+}
+
+.tab-recent-row__code {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.tab-recent-row__meta {
+  flex: 1;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tab-recent-row__amt {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.press-block {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--paper-edge);
+}
+
+.press-h {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.press-body {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.press-copy {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.press-list {
+  margin: 10px 0 0;
+  padding-left: 1.15rem;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.press-list--bullets {
+  list-style: disc;
+}
+
+.press-shares {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.press-shares li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* Short phones / landscape WebViews — shrink further so CTA stays visible */
+@media (max-height: 720px) {
+  :root {
+    --hero-h: clamp(56px, 12svh, 88px);
+    --hero-h-compact: clamp(40px, 8svh, 56px);
+    --space-section: clamp(12px, 3.5vw, 18px);
+    --type-money: clamp(34px, 11vw, 44px);
+  }
+}
+
+@media (max-height: 580px) {
+  :root {
+    --hero-h: clamp(44px, 10svh, 64px);
+    --hero-h-compact: 36px;
+    --space-section: 10px;
+  }
+
+  .receipt-shell {
+    padding-top: calc(6px + var(--safe-top));
+  }
+
+  .ui-hero {
+    display: none;
+  }
+}
+
+/* Narrow phones */
+@media (max-width: 360px) {
+  :root {
+    --pad-x: 14px;
+    --type-display: clamp(26px, 8vw, 30px);
+    --type-money: clamp(36px, 12vw, 44px);
+  }
+
+  .stepper-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Prefer reduced data / very small screens: keep images contained */
+@media (max-width: 320px) {
+  .ui-hero {
+    height: 64px;
+  }
+}
