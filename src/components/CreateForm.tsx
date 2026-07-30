@@ -15,7 +15,6 @@ import { PeopleFaceStack } from '@/components/PeopleFaceStack'
 import { TabRecents } from '@/components/TabRecents'
 import { faceForIndex } from '@/lib/people-faces'
 import { rememberHostedTab } from '@/lib/tab-history'
-import Link from 'next/link'
 
 /**
  * Zero-instruction create flow — phone-first.
@@ -314,12 +313,6 @@ export function CreateForm() {
       {error && (
         <p className="stack-section text-[14px] font-semibold text-alert">{error}</p>
       )}
-
-      <p className="stack-section pb-2 text-center text-[12px] text-muted">
-        <Link href="/press" className="underline underline-offset-2">
-          Press kit
-        </Link>
-      </p>
     </AppShell>
   )
 }
