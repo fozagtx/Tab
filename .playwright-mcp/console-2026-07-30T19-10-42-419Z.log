@@ -1,0 +1,8 @@
+[     354ms] Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at rZ (https://gettab.vercel.app/_next/static/chunks/4bd1b696-215e5051988c3dde.js:1:36737)
+    at id (https://gettab.vercel.app/_next/static/chunks/4bd1b696-215e5051988c3dde.js:1:87958)
+    at sh (https://gettab.vercel.app/_next/static/chunks/4bd1b696-215e5051988c3dde.js:1:128648)
+    at https://gettab.vercel.app/_next/static/chunks/4bd1b696-215e5051988c3dde.js:1:123534
+    at sr (https://gettab.vercel.app/_next/static/chunks/4bd1b696-215e5051988c3dde.js:1:123635)
+    at sq (https://gettab.vercel.app/_next/static/chunks/4bd1b696-215e5051988c3dde.js:1:150205)
+    at MessagePort.A (https://gettab.vercel.app/_next/static/chunks/794-8c8774bd9adfd317.js:1:49027)

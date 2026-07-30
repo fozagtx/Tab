@@ -1,4 +1,4 @@
--- Tab schema — run in Supabase SQL editor
+-- Tab schema — plain Postgres (Neon). Apply with psql or the Neon console.
 
 create table if not exists tabs (
   code            text primary key,
@@ -17,7 +17,7 @@ create table if not exists tabs (
 create table if not exists shares (
   id           uuid primary key default gen_random_uuid(),
   tab_code     text not null references tabs(code) on delete cascade,
-  index        int not null,
+  "index"      int not null,
   label        text,
   amount_luna  bigint not null,
   memo         text not null,
@@ -25,7 +25,7 @@ create table if not exists shares (
   status       text not null default 'unpaid',
   tx_hash      text unique,
   paid_at      timestamptz,
-  unique (tab_code, index)
+  unique (tab_code, "index")
 );
 
 create table if not exists receipts (
@@ -45,13 +45,6 @@ create table if not exists unmatched_txs (
   seen_at      timestamptz not null default now()
 );
 
-alter table tabs enable row level security;
-alter table shares enable row level security;
-alter table receipts enable row level security;
+create index if not exists idx_tabs_device_created on tabs (host_device_id, created_at);
 
--- Public read of tab/share/receipt state (never expose host_token via views/API)
-create policy "public read tabs" on tabs for select using (true);
-create policy "public read shares" on shares for select using (true);
-create policy "public read receipts" on receipts for select using (true);
-
--- Mutations go through service role in API routes only.
+-- Mutations go through the API routes only; the app connects with DATABASE_URL.

@@ -1,0 +1,41 @@
+- generic [ref=e1]:
+  - alert [ref=e20]
+  - generic [ref=e21]:
+    - generic [ref=e22]:
+      - banner [ref=e23]:
+        - generic "Tab" [ref=e24]
+        - generic [ref=e26]: Testnet
+      - note [ref=e28]:
+        - text: Settles in
+        - strong [ref=e29]: NIM
+        - text: · feeless · ~1s
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]: Total
+          - generic [ref=e33]: USD
+        - textbox "Total" [active] [ref=e35]:
+          - /placeholder: "0.00"
+        - generic [ref=e37]:
+          - generic:
+            - img "NIM"
+          - generic [ref=e38]: Enter a total to see NIM
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]: People
+          - generic [ref=e43]:
+            - button "Fewer people" [ref=e44] [cursor=pointer]: −
+            - generic [ref=e45]: "4"
+            - button "More people" [ref=e46] [cursor=pointer]: +
+        - generic "4 people" [ref=e47]:
+          - generic [ref=e48]: 🧑🏻
+          - generic [ref=e49]: 👩🏾
+          - generic [ref=e50]: 👨🏻
+          - generic [ref=e51]: 👩🏼
+      - generic [ref=e52]:
+        - text: Pay to
+        - textbox "Pay to" [ref=e53]:
+          - /placeholder: NQ…
+      - paragraph [ref=e54]:
+        - link "Press kit" [ref=e55] [cursor=pointer]:
+          - /url: /press
+    - button "Connect" [disabled] [ref=e57]

@@ -112,7 +112,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-Storage is optional: with Supabase env vars set, tabs live in Postgres (`supabase/schema.sql`); without them, in a local `.data/store.json`.
+Storage is optional locally: with `DATABASE_URL` set, tabs live in Postgres (`db/schema.sql`, Neon works out of the box); without it, in a local `.data/store.json`. Production needs `DATABASE_URL`.
 
 ### Testnet in Nimiq Pay
 
@@ -128,9 +128,7 @@ History polling uses `v2.test.nimiqwatch.com`; explorer links go to `test.nimiq.
 | Variable | Required | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_NIMIQ_NETWORK` | no | `testnet` (default) or `mainnet` |
-| `NEXT_PUBLIC_SUPABASE_URL` | no | Supabase project URL; omit to use the local JSON store |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | no | Supabase anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | no | Server-side Supabase writes |
+| `DATABASE_URL` | in production | Postgres connection string (`db/schema.sql`); omit locally to use the JSON store |
 | `NIMIQ_RPC_URL` | no | JSON-RPC override; mainnet default is `https://rpc.nimiqwatch.com` |
 | `NEXT_PUBLIC_APP_URL` | no | Canonical URL for Open Graph links |
 
@@ -145,7 +143,7 @@ History polling uses `v2.test.nimiqwatch.com`; explorer links go to `test.nimiq.
 | Cash marks | Host-asserted, not chain-verified |
 | Mismatched payments | Host Keep / Undo only |
 | FX display | Live NIM/USD rate even on testnet; test NIM has no market value |
-| Local store | `.data/` is single-process — use Supabase in production |
+| Local store | `.data/` is single-process — set `DATABASE_URL` (Postgres) in production |
 
 ## Roadmap
 

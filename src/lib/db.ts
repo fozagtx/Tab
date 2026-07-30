@@ -1,13 +1,13 @@
 /**
  * Data access.
- * Uses Supabase when NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are set.
+ * Uses Postgres (Neon) when DATABASE_URL is set.
  * Otherwise uses a JSON file store under .data/ so local golden-path works.
  */
 
 import { randomUUID } from 'crypto'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { neon } from '@neondatabase/serverless'
 import type { Receipt, Share, ShareStatus, Tab, TabStatus } from './types'
 
 type Store = {
@@ -46,15 +46,68 @@ function persist(store: Store) {
   return writeQueue
 }
 
-function supabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
+type Sql = ReturnType<typeof neon>
+let cachedSql: Sql | null | undefined
+
+function sql(): Sql | null {
+  if (cachedSql !== undefined) return cachedSql
+  const url = process.env.DATABASE_URL
+  cachedSql = url ? neon(url) : null
+  return cachedSql
 }
 
-export function usingSupabase(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+export function usingDatabase(): boolean {
+  return Boolean(process.env.DATABASE_URL)
+}
+
+/* Postgres returns bigint/numeric as strings and timestamptz as Date — coerce
+   at the boundary so the rest of the app keeps doing plain number math. */
+type Row = Record<string, unknown>
+
+const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : String(v))
+const isoOrNull = (v: unknown): string | null => (v == null ? null : iso(v))
+const strOrNull = (v: unknown): string | null => (v == null ? null : String(v))
+
+function rowToTab(r: Row): Tab {
+  return {
+    code: String(r.code),
+    host_token: String(r.host_token),
+    host_address: String(r.host_address),
+    host_device_id: strOrNull(r.host_device_id),
+    currency: String(r.currency),
+    total_luna: Number(r.total_luna),
+    fx_rate: Number(r.fx_rate),
+    title: strOrNull(r.title),
+    status: r.status as TabStatus,
+    created_at: iso(r.created_at),
+    expires_at: iso(r.expires_at),
+  }
+}
+
+function rowToShare(r: Row): Share {
+  return {
+    id: String(r.id),
+    tab_code: String(r.tab_code),
+    index: Number(r.index),
+    label: strOrNull(r.label),
+    amount_luna: Number(r.amount_luna),
+    memo: String(r.memo),
+    fingerprint: Number(r.fingerprint),
+    status: r.status as ShareStatus,
+    tx_hash: strOrNull(r.tx_hash),
+    paid_at: isoOrNull(r.paid_at),
+  }
+}
+
+function rowToReceipt(r: Row): Receipt {
+  return {
+    tab_code: String(r.tab_code),
+    canonical: String(r.canonical),
+    signer: String(r.signer),
+    public_key: String(r.public_key),
+    signature: String(r.signature),
+    created_at: iso(r.created_at),
+  } as Receipt
 }
 
 export async function createTab(input: {
@@ -102,12 +155,22 @@ export async function createTab(input: {
     paid_at: null,
   }))
 
-  const sb = supabase()
-  if (sb) {
-    const { error: e1 } = await sb.from('tabs').insert(tab)
-    if (e1) throw e1
-    const { error: e2 } = await sb.from('shares').insert(shares)
-    if (e2) throw e2
+  const q = sql()
+  if (q) {
+    await q`
+      insert into tabs (code, host_token, host_address, host_device_id, currency,
+                        total_luna, fx_rate, title, status, created_at, expires_at)
+      values (${tab.code}, ${tab.host_token}, ${tab.host_address}, ${tab.host_device_id},
+              ${tab.currency}, ${tab.total_luna}, ${tab.fx_rate}, ${tab.title},
+              ${tab.status}, ${tab.created_at}, ${tab.expires_at})`
+    await Promise.all(
+      shares.map(
+        (s) => q`
+          insert into shares (id, tab_code, "index", label, amount_luna, memo, fingerprint, status)
+          values (${s.id}, ${s.tab_code}, ${s.index}, ${s.label}, ${s.amount_luna},
+                  ${s.memo}, ${s.fingerprint}, ${s.status})`,
+      ),
+    )
     return { tab, shares }
   }
 
@@ -119,26 +182,21 @@ export async function createTab(input: {
 }
 
 export async function getTab(code: string): Promise<Tab | null> {
-  const sb = supabase()
-  if (sb) {
-    const { data, error } = await sb.from('tabs').select('*').eq('code', code).maybeSingle()
-    if (error) throw error
-    return data as Tab | null
+  const q = sql()
+  if (q) {
+    const rows = (await q`select * from tabs where code = ${code.toUpperCase()}`) as Row[]
+    return rows[0] ? rowToTab(rows[0]) : null
   }
   const store = await loadFileStore()
   return store.tabs[code.toUpperCase()] ?? store.tabs[code] ?? null
 }
 
 export async function getShares(code: string): Promise<Share[]> {
-  const sb = supabase()
-  if (sb) {
-    const { data, error } = await sb
-      .from('shares')
-      .select('*')
-      .eq('tab_code', code)
-      .order('index')
-    if (error) throw error
-    return (data as Share[]) ?? []
+  const q = sql()
+  if (q) {
+    const rows = (await q`
+      select * from shares where tab_code = ${code.toUpperCase()} order by "index"`) as Row[]
+    return rows.map(rowToShare)
   }
   const store = await loadFileStore()
   return (store.shares[code.toUpperCase()] ?? store.shares[code] ?? []).slice().sort((a, b) => a.index - b.index)
@@ -149,17 +207,18 @@ export async function updateShare(
   index: number,
   patch: Partial<Pick<Share, 'label' | 'amount_luna' | 'status' | 'tx_hash' | 'paid_at'>>,
 ): Promise<Share | null> {
-  const sb = supabase()
-  if (sb) {
-    const { data, error } = await sb
-      .from('shares')
-      .update(patch)
-      .eq('tab_code', code)
-      .eq('index', index)
-      .select('*')
-      .maybeSingle()
-    if (error) throw error
-    return data as Share | null
+  const q = sql()
+  if (q) {
+    const rows = (await q`
+      select * from shares where tab_code = ${code.toUpperCase()} and "index" = ${index}`) as Row[]
+    if (!rows[0]) return null
+    const merged: Share = { ...rowToShare(rows[0]), ...patch }
+    await q`
+      update shares
+      set label = ${merged.label}, amount_luna = ${merged.amount_luna},
+          status = ${merged.status}, tx_hash = ${merged.tx_hash}, paid_at = ${merged.paid_at}
+      where tab_code = ${code.toUpperCase()} and "index" = ${index}`
+    return merged
   }
   const store = await loadFileStore()
   const list = store.shares[code] ?? store.shares[code.toUpperCase()]
@@ -185,10 +244,9 @@ export async function settleShareByTx(
 }
 
 export async function setTabStatus(code: string, status: TabStatus): Promise<void> {
-  const sb = supabase()
-  if (sb) {
-    const { error } = await sb.from('tabs').update({ status }).eq('code', code)
-    if (error) throw error
+  const q = sql()
+  if (q) {
+    await q`update tabs set status = ${status} where code = ${code.toUpperCase()}`
     return
   }
   const store = await loadFileStore()
@@ -201,10 +259,16 @@ export async function setTabStatus(code: string, status: TabStatus): Promise<voi
 
 export async function saveReceipt(receipt: Omit<Receipt, 'created_at'>): Promise<Receipt> {
   const full: Receipt = { ...receipt, created_at: new Date().toISOString() }
-  const sb = supabase()
-  if (sb) {
-    const { error } = await sb.from('receipts').upsert(full)
-    if (error) throw error
+  const q = sql()
+  if (q) {
+    await q`
+      insert into receipts (tab_code, canonical, signer, public_key, signature, created_at)
+      values (${full.tab_code}, ${full.canonical}, ${full.signer}, ${full.public_key},
+              ${full.signature}, ${full.created_at})
+      on conflict (tab_code) do update
+      set canonical = excluded.canonical, signer = excluded.signer,
+          public_key = excluded.public_key, signature = excluded.signature,
+          created_at = excluded.created_at`
     return full
   }
   const store = await loadFileStore()
@@ -214,11 +278,10 @@ export async function saveReceipt(receipt: Omit<Receipt, 'created_at'>): Promise
 }
 
 export async function getReceipt(code: string): Promise<Receipt | null> {
-  const sb = supabase()
-  if (sb) {
-    const { data, error } = await sb.from('receipts').select('*').eq('tab_code', code).maybeSingle()
-    if (error) throw error
-    return data as Receipt | null
+  const q = sql()
+  if (q) {
+    const rows = (await q`select * from receipts where tab_code = ${code.toUpperCase()}`) as Row[]
+    return rows[0] ? rowToReceipt(rows[0]) : null
   }
   const store = await loadFileStore()
   return store.receipts[code] ?? store.receipts[code.toUpperCase()] ?? null
@@ -230,9 +293,12 @@ export async function parkUnmatched(opts: {
   value_luna: number
   memo: string | null
 }): Promise<void> {
-  const sb = supabase()
-  if (sb) {
-    await sb.from('unmatched_txs').upsert(opts)
+  const q = sql()
+  if (q) {
+    await q`
+      insert into unmatched_txs (tx_hash, tab_code, value_luna, memo)
+      values (${opts.tx_hash}, ${opts.tab_code}, ${opts.value_luna}, ${opts.memo})
+      on conflict (tx_hash) do nothing`
     return
   }
   const store = await loadFileStore()
@@ -243,15 +309,12 @@ export async function parkUnmatched(opts: {
 }
 
 export async function countTabsByDevice(deviceId: string, sinceIso: string): Promise<number> {
-  const sb = supabase()
-  if (sb) {
-    const { count, error } = await sb
-      .from('tabs')
-      .select('*', { count: 'exact', head: true })
-      .eq('host_device_id', deviceId)
-      .gte('created_at', sinceIso)
-    if (error) throw error
-    return count ?? 0
+  const q = sql()
+  if (q) {
+    const rows = (await q`
+      select count(*)::int as n from tabs
+      where host_device_id = ${deviceId} and created_at >= ${sinceIso}`) as Row[]
+    return rows[0] ? Number(rows[0].n) : 0
   }
   const store = await loadFileStore()
   return Object.values(store.tabs).filter(

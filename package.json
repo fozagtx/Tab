@@ -9,11 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@nimiq/core": "^2.7.2",
     "@nimiq/mini-app-sdk": "^0.1.0",
     "@nimiq/utils": "^0.12.4",
     "@rive-app/react-canvas": "^4.30.0",
-    "@supabase/supabase-js": "^2.111.0",
     "motion": "^12.43.0",
     "nanoid": "^6.0.0",
     "next": "16.2.12",
