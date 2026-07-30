@@ -1248,67 +1248,6 @@ canvas {
   font-weight: 600;
 }
 
-.press-block {
-  margin-top: 22px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--paper-edge);
-}
-
-.press-h {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.press-body {
-  margin-top: 8px;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--ink);
-}
-
-.press-copy {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-}
-
-.press-list {
-  margin: 10px 0 0;
-  padding-left: 1.15rem;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--ink);
-}
-
-.press-list--bullets {
-  list-style: disc;
-}
-
-.press-shares {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.press-shares li {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
 /* Short phones / landscape WebViews — shrink further so CTA stays visible */
 @media (max-height: 720px) {
   :root {
