@@ -39,7 +39,58 @@ flowchart LR
   Board -->|sign| Receipt["/r/CODE"]
 ```
 
-Payments are matched two ways: **A**, by the memo carried in the transaction; **B**, automatically by an amount fingerprint when a wallet strips the memo. Matching is idempotent, mismatches surface as host Keep / Undo decisions, and tabs refuse new payments after they expire (24h).
+The board polls the sync endpoint, which reads recent transfers to the host's address from chain history and runs each one through the matcher.
+
+## Core logic: how a payment becomes PAID
+
+Every share's payable amount is its base amount plus a tiny unique **luna fingerprint**. That is the trick the whole matcher rests on: even when a wallet strips the memo, the amount alone still identifies exactly one share.
+
+```mermaid
+sequenceDiagram
+  participant G as Guest wallet
+  participant N as Nimiq chain
+  participant B as Board /t/CODE
+  participant S as POST /api/tabs/CODE/sync
+  participant M as Matcher
+
+  G->>N: Pay host address<br/>memo "TAB CODE-NN", amount = share + fingerprint
+  loop while tab is open
+    B->>S: poll
+    S->>N: last 40 txs to host address
+    S->>M: each incoming tx
+    alt tx hash already on a share
+      M-->>S: ignore (idempotent)
+    else Matcher A: memo "TAB CODE-NN"
+      M-->>S: share NN → paid
+    else Matcher B: exact amount + fingerprint
+      M-->>S: share → paid
+    else within 1% of exactly one open share
+      M-->>S: share → mismatch (host: Keep / Undo)
+    else no fit
+      M-->>S: parked as unmatched
+    end
+    S-->>B: shares + progress, stub flips PAID
+  end
+  B->>B: all resolved → host signs receipt → /r/CODE
+```
+
+Each share moves through a small state machine; the tab itself is `open → settled` (or `expired` after 24h, when it refuses new payments):
+
+```mermaid
+stateDiagram-v2
+  [*] --> unpaid: tab created
+  unpaid --> pending: guest starts payment in Nimiq Pay
+  unpaid --> paid: matcher A or B hit
+  pending --> paid: matcher A or B hit
+  unpaid --> marked: host marks a cash payment
+  marked --> paid: chain match arrives anyway
+  unpaid --> mismatch: near-match within 1%
+  mismatch --> paid: host keeps it
+  mismatch --> unpaid: host undoes it
+  paid --> [*]: all shares resolved → tab settled
+```
+
+Matching is idempotent (a transaction hash settles a share once), pure (`lib/nimiq/match.ts` has no DB imports and is unit-testable), and conservative: anything ambiguous becomes a host decision instead of a silent guess.
 
 ## Why Nimiq
 
